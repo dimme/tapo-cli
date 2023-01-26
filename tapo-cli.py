@@ -22,7 +22,7 @@ secret = '7d8b75223d674cdab23651d918434d81' if beta else '6ed7d97f3e73467f8a5bab
 # Change these to a closer server if you want, monitor your phone's DNS requests to figure it out.
 app_server_url = 'https://n-wap-beta.tplinkcloud.com' if beta else 'https://n-euw1-wap-gw.tplinkcloud.com'
 
-# Every request needs a uuid nonce and time
+# Every request needs a uuid nonce and time, any value seems to work but let's not raise any suspicions.
 nonce = str(uuid.uuid1())
 now = str(int(time.time()))
 
@@ -42,18 +42,29 @@ def signature(content, endpoint):
 def x_authorization(content, endpoint):
     return 'Timestamp=' + now + ', Nonce=' + nonce + ', AccessKey=' + access_key + ', Signature=' + signature(content, endpoint)
 
+# Headers that the Android app is using.
+def headers(content, endpoint):
+    return {
+        'Content-Md5' : content_md5(content),
+        'X-Authorization' : x_authorization(content, endpoint),
+        'Content-Type': 'application/json; charset=UTF-8',
+        'User-Agent': 'okhttp/3.12.13'
+    }
+
 # Gets authorization token from ~/.tapo-cli/.token
+# No idea if this works on Windows, what are you, some kind of psychopath?
 def get_token():
     try:
-        token = open(os.path.expanduser('~') + '/.tapo-cli/.token', 'r')
+        file = open(os.path.expanduser('~') + '/.tapo-cli/.token', 'r')
         
-        if token.readline().strip() != 'TPTOKEN':
+        if file.readline().strip() != 'TPTOKEN':
             click.echo('Malformed credentials file.')
             exit(0)
 
-        token = token.readline().strip()
+        token = file.readline().strip()
+        email = file.readline().strip()
 
-        return token
+        return token, email
     except:
         click.echo('Please login first.')
         exit(0)
@@ -68,6 +79,17 @@ def error(obj):
 def post(url, data, headers):
     return json.loads(requests.post(url, data = data, headers = headers, verify = False, proxies = { "https" : "https://10.0.0.127:8080" }).text)
 
+def probe_endpoint(content, endpoint, token):
+    url = app_server_url + endpoint + '?token=' + token
+        
+    res = post(url, content, headers(content, endpoint))
+
+    if (res['error_code'] != 0):
+        error(res)
+    else:
+        print(json.dumps(res['result'], indent = 4))
+        return res
+
 @click.group()
 def tapo():
     """Command-line application for batch-downloading your videos from the Tapo TP-Link Cloud."""
@@ -80,29 +102,27 @@ def tapo():
 def login(username, password):
     click.echo('Access token saved in ~/.tapo-cli/.token')
 
+# Get account info
+@click.command()
+def account_info():
+    token, email = get_token()
+    endpoint = '/api/v2/account/getAccountInfo'
+
+    # Vulnerability found here, it will return:
+    # 'Account not found' if the account is not found
+    # 'Token incorrect' if the account exists but you are not logged in as that user
+    # Which makes it possible to enumerate users with Tapo accounts
+
+    content = '{"cloudUserName":"' + email + '"}'
+    return probe_endpoint(content, endpoint, token)
+
 # Devices
 @click.command()
 def devices():
     token = get_token()
     endpoint = '/api/v2/common/getDeviceListByPage'
-    url = app_server_url + endpoint + '?token=' + token
     content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH"],"index":0,"limit":20}'
-    headers = {
-        'Content-Md5' : content_md5(content),
-        'X-Authorization' : x_authorization(content, endpoint),
-        'Content-Type': 'application/json; charset=UTF-8',
-        'User-Agent': 'okhttp/3.12.13'
-    }
-
-    devices = post(url, content, headers)
-
-    if (devices['error_code'] != 0):
-        error(devices)
-    else:
-        print('Found ' + str(devices['result']['totalNum']) + ' devices:')
-        for device in devices['result']['deviceList']:
-            print(json.dumps(device, indent = 4))
-        return devices
+    return probe_endpoint(content, endpoint, token)
 
 # List
 @click.command()
@@ -120,6 +140,7 @@ def download(days, path):
     click.echo('Downloaded to ' + path)
 
 tapo.add_command(login)
+tapo.add_command(account_info)
 tapo.add_command(devices)
 tapo.add_command(list)
 tapo.add_command(download)
