@@ -11,9 +11,16 @@ import uuid
 import time
 import json
 
+# Something to investigate further if you want, setting it to True returns 'Incorrect service entry address' currently.
+# Likely different endpoints for the beta channel.
+beta = False
+
 # Secrets extracted from the .apk
-access_key = '4d11b6b9d5ea4d19a829adbb9714b057'
-secret = '6ed7d97f3e73467f8a5bab90b577ba4c'
+access_key = 'c5346f1ee6b54cd4b91908f430be0dd8' if beta else '4d11b6b9d5ea4d19a829adbb9714b057'
+secret = '7d8b75223d674cdab23651d918434d81' if beta else '6ed7d97f3e73467f8a5bab90b577ba4c'
+
+# Change these to a closer server if you want, monitor your phone's DNS requests to figure it out.
+app_server_url = 'https://n-wap-beta.tplinkcloud.com' if beta else 'https://n-euw1-wap-gw.tplinkcloud.com'
 
 # Every request needs a uuid nonce and time
 nonce = str(uuid.uuid1())
@@ -78,7 +85,7 @@ def login(username, password):
 def devices():
     token = get_token()
     endpoint = '/api/v2/common/getDeviceListByPage'
-    url = 'https://n-euw1-wap-gw.tplinkcloud.com' + endpoint + '?token=' + token
+    url = app_server_url + endpoint + '?token=' + token
     content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH"],"index":0,"limit":20}'
     headers = {
         'Content-Md5' : content_md5(content),
