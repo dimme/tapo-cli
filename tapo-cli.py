@@ -63,7 +63,7 @@ def post(url, data, headers):
 
 @click.group()
 def tapo():
-    """Command-line based application for batch-downloading your video files from the Tapo TP-Link Cloud."""
+    """Command-line application for batch-downloading your videos from the Tapo TP-Link Cloud."""
     pass
 
 # Login
