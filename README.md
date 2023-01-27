@@ -17,3 +17,27 @@ chmod +x tapo-cli.py
 ```
 
 For more stuff check `./tapo-cli.py --help` and `./tapo-cli.py [COMMAND] --help`
+
+## Automating backups
+### Windows
+Create a `.bat` file similar to this one and schedule it to run once pey day using the Task Scheduler:
+```
+ubuntu.exe run "/home/<user>/tapo-cli/tapo-cli.py download-videos --days 7 --path /mnt/c/TapoBackups --overwrite 0"
+```
+It requires [WSL](https://learn.microsoft.com/en-us/windows/wsl/install). I also added the `.bat` file in `C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup` to run every time I login.
+
+### Linux
+
+Create a cron task:
+
+```
+sudo crontab -e
+```
+
+and append a line similar to this one, adjusted for your paths:
+
+```
+30 4 * * *  <user> /home/<user>/tapo-cli/tapo-cli.py download-videos --days 7 --path /home/<user>/TapoBackups --overwrite 0
+```
+
+It will run at 4:30AM every day.
