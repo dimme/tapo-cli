@@ -24,7 +24,7 @@ Create a `.bat` file similar to this one and schedule it to run once pey day usi
 ```
 ubuntu.exe run "/home/<user>/tapo-cli/tapo-cli.py download-videos --days 7 --path /mnt/c/TapoBackups --overwrite 0"
 ```
-It requires [WSL](https://learn.microsoft.com/en-us/windows/wsl/install). I also scheduled mine to run at startup.
+It requires [WSL](https://learn.microsoft.com/en-us/windows/wsl/install). I also scheduled mine to run at log on.
 ### Linux
 
 Create a cron task:
