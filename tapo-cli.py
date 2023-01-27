@@ -287,7 +287,7 @@ def list_videos(days):
 @click.command()
 @click.option('--days', default=1, prompt="Last X days", help='Last X days which you want to download videos for.')
 @click.option('--path', default="~/", prompt="Path", help='Path where you want your videos to be downloaded. It will create directories based on dates.')
-@click.option('--overwrite', default=False, prompt="Overwrite", help='Overwrite any files using the same name in the same location. (True/False)')
+@click.option('--overwrite', default=0, prompt="Overwrite", help='Overwrite any files using the same name in the same location.')
 def download_videos(days, path, overwrite):
     """Downloads videos for the last X days to path."""
     get_config() # Checks if logged in
@@ -314,7 +314,7 @@ def download_videos(days, path, overwrite):
                 url = video['video'][0]['uri']
                 file_path = path + dev['alias'] + '/' + datetime.datetime.strptime(video['eventLocalTime'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d') + '/'
                 file_name = video['eventLocalTime'].replace(':','-') + '.mp4'
-                if os.path.exists(file_path + file_name) and not overwrite:
+                if os.path.exists(file_path + file_name) and overwrite == 0:
                     print('Already exists ' + file_path + file_name)    
                 else:
                     print('Downloading to ' + file_path + file_name)
