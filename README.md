@@ -20,7 +20,7 @@ For more stuff check `./tapo-cli.py --help` and `./tapo-cli.py [COMMAND] --help`
 
 ## Automating backups
 ### Windows
-Create a `.bat` file similar to this one and schedule it to run once pey day using the Task Scheduler:
+Create a `.bat` file similar to this one and schedule it to run once per day using the Task Scheduler:
 ```
 ubuntu.exe run "/home/<user>/tapo-cli/tapo-cli.py download-videos --days 7 --path /mnt/c/TapoBackups --overwrite 0"
 ```
