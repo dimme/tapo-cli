@@ -1,11 +1,14 @@
-# tapo-cli
-Command-line utility for batch-downloading your videos from the Tapo TP-Link Cloud.
+# tapo-cli: Tapo TP-Link Cloud Video Downloader
 
-This has not been tested on Windows, use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
+tapo-cli is a command-line utility designed to streamline the process of batch-downloading your videos from the Tapo TP-Link Cloud.
 
-It should work fine one any Debian-based OS with `python3` and `pip3` installed.
+Please note that this utility has not been tested on Windows systems. It is recommended to utilize the [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install) for Windows users.
 
-## How to use
+The utility is compatible with any Debian-based operating system that has `python3` and `pip3` installed.
+
+## Usage Instructions
+To begin using Tapo-CLI, follow these steps:
+
 ```
 git clone https://github.com/dimme/tapo-cli.git
 cd tapo-cli
@@ -16,27 +19,29 @@ chmod +x tapo-cli.py
 ./tapo-cli.py download-videos
 ```
 
-For more stuff check `./tapo-cli.py --help` and `./tapo-cli.py [COMMAND] --help`
+For additional information and options, please refer to `./tapo-cli.py --help` and `./tapo-cli.py [COMMAND] --help`.
 
-## Automating backups
+## Automating Backups
 ### Windows
-Create a `.bat` file similar to this one and schedule it to run once per day using the Task Scheduler:
+To automate daily backups on Windows, create a `.bat` file with the following content and schedule it to run once per day using Task Scheduler:
+
 ```
 ubuntu.exe run "/home/<user>/tapo-cli/tapo-cli.py download-videos --days 7 --path /mnt/c/TapoBackups --overwrite 0"
 ```
-It requires [WSL](https://learn.microsoft.com/en-us/windows/wsl/install). I also scheduled mine to run at log on.
-### Linux
 
-Create a cron task:
+This process requires the [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install). You may also choose to schedule the task to run upon system logon.
+
+### Linux
+To automate daily backups on Linux, create a cron task by executing:
 
 ```
 sudo crontab -e
 ```
 
-and append a line similar to this one, adjusted for your paths:
+Then, append a line similar to the one below, adjusted to match your specific paths:
 
 ```
 30 4 * * *  <user> /home/<user>/tapo-cli/tapo-cli.py download-videos --days 7 --path /home/<user>/TapoBackups --overwrite 0
 ```
 
-It will run at 4:30AM every day.
+This will schedule the task to run at 4:30 AM every day.
