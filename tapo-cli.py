@@ -18,6 +18,8 @@ import uuid
 import time
 import json
 import datetime
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
 # Secrets extracted from the .apk
 access_key = '4d11b6b9d5ea4d19a829adbb9714b057'
@@ -92,12 +94,24 @@ def get(url, params, headers):
 def post(url, data, headers):
     return json.loads(requests.post(url, data = data, headers = headers, verify = False).text)
 
-# Downloads a file from the Intenetz
-def download(url, file_path, file_name):
+# Downloads a file from the Intenetz and decrypts it
+def download(url, key_b64, file_path, file_name):
     if not os.path.exists(file_path): os.makedirs(file_path)
-    with open(file_path + file_name, 'w+b') as file:
-        res = requests.get(url)
-        file.write(res.content)
+
+    res = requests.get(url)
+    content = res.content
+
+    if key_b64:
+        key = base64.b64decode(key_b64)
+        iv = content[:16]
+        enc_data = content[16:]
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        dec_content = unpad(cipher.decrypt(enc_data), AES.block_size)
+    else:
+        dec_content = content
+
+    with open(os.path.join(file_path, file_name), 'wb') as file:
+        file.write(dec_content)
 
 def probe_endpoint_get(params, endpoint):
     token, null, null, app_server_url_get = get_config()
@@ -281,7 +295,7 @@ def list_videos(days):
         if 'index' in videos:
             for video in videos['index']:
                 print(video['eventLocalTime'], end = ", ")
-                #print(video['video'][0]['uri']) # This will print URLs to the videos if you want to download them using another tool
+                #print(video['video'][0]['uri']) # This will print URLs to the videos if you want to download them using another tool, but don't forget to get the AES key from video['video'][0]['decryptionInfo']['key']
         if videos['total'] > 0: print('')
 
 @click.command()
@@ -312,13 +326,25 @@ def download_videos(days, path, overwrite):
         if 'index' in videos:
             for video in videos['index']:
                 url = video['video'][0]['uri']
+                key_b64 = False
+
+                # Check if the video is encrypted and get the key
+                if 'encryptionMethod' in video['video'][0]:
+                    method = video['video'][0]['encryptionMethod']
+                    if method != "AES-128-CBC":
+                        print(f"Unsupported encryption method: {method}. Quitting...")
+                        print("Create an issue here: https://github.com/dimme/tapo-cli/issues")
+                        exit(1)
+
+                    key_b64 = video['video'][0]['decryptionInfo']['key']
+                
                 file_path = path + dev['alias'] + '/' + datetime.datetime.strptime(video['eventLocalTime'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d') + '/'
                 file_name = video['eventLocalTime'].replace(':','-') + '.mp4'
                 if os.path.exists(file_path + file_name) and overwrite == 0:
                     print('Already exists ' + file_path + file_name)    
                 else:
                     print('Downloading to ' + file_path + file_name)
-                    download(url, file_path, file_name)
+                    download(url, key_b64, file_path, file_name)
 
 tapo.add_command(login, 'login')
 tapo.add_command(account_info, 'list-account-info')
