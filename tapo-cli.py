@@ -318,6 +318,7 @@ def download_videos(days, path, overwrite):
     end_time = datetime.datetime.utcfromtimestamp(end_unixtime).strftime('%Y-%m-%d 00:00:00')
     start_time = datetime.datetime.utcfromtimestamp(start_unixtime).strftime('%Y-%m-%d 00:00:00')
 
+    result = []
     endpoint = '/v2/videos/list'
     for dev in devs['deviceList']:
         params = 'deviceId=' + dev['deviceId'] + '&page=0&pageSize=3000&order=desc&startTime=' + start_time + '&endTime=' + end_time
@@ -342,9 +343,12 @@ def download_videos(days, path, overwrite):
                 file_name = video['eventLocalTime'].replace(':','-') + '.mp4'
                 if os.path.exists(file_path + file_name) and overwrite == 0:
                     print('Already exists ' + file_path + file_name)    
+                    result.append({'file': file_path + file_name, 'device': dev['alias'], 'new_video': False, 'video': video})
                 else:
                     print('Downloading to ' + file_path + file_name)
                     download(url, key_b64, file_path, file_name)
+                    result.append({'file': file_path + file_name, 'device': dev['alias'], 'new_video': True, 'video': video})
+    return result
 
 tapo.add_command(login, 'login')
 tapo.add_command(account_info, 'list-account-info')
