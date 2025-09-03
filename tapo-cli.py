@@ -5,7 +5,7 @@
 
 # There are no sanity checks or checks for errors in this script. If it fails, if fails. Usually it doesn't fail. Just run it again or fix the error and submit a pull request. Be thankful you didn't have to reverse engineer Tapo's HMAC-SHA1 signature nightmare.
 
-# Copyright Dimitrios Vlastaras 2023
+# Copyright Dimme 2023
 
 import os
 import click
