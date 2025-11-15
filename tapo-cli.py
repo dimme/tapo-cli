@@ -322,17 +322,14 @@ def list_videos(days):
     start_time = datetime.datetime.fromtimestamp(start_unixtime, datetime.timezone.utc).strftime('%Y-%m-%d 00:00:00')
 
     endpoint = '/v2/videos/list'
-    page_size = 1000  # was 3000
+    page_size = 1000
 
     for dev in devs['deviceList']:
         print(f"\nListing videos for {dev['alias']}:")
 
         page = 0
-        total_printed = 0
 
         while True:
-            print("page: " + str(page))
-
             params = (
                 'deviceId=' + dev['deviceId'] +
                 '&page=' + str(page) +
@@ -351,15 +348,13 @@ def list_videos(days):
             entries = videos.get('index', [])
             if not entries:
                 # No more videos on this page -> we are done
-                if total_printed == 0:
-                    print("  No videos found.")
                 break
 
             # Print timestamps for this page
             for video in entries:
-            #     print(video['eventLocalTime'], end=", ")
-                total_printed += 1
-            print(len(entries))
+                print(video['eventLocalTime'], end=", ")
+                #print(video['video'][0]['uri']) # This will print URLs to the videos if you want to download them using another tool, but don't forget to get the AES key from video['video'][0]['decryptionInfo']['key']
+
             # If we got fewer than page_size entries, that was the last page
             if len(entries) < page_size:
                 print("")  # newline after the comma-separated list
@@ -389,7 +384,7 @@ def download_videos(days, path, overwrite):
 
     result = []
     endpoint = '/v2/videos/list'
-    page_size = 1000  # was 3000
+    page_size = 1000
 
     # stats per camera
     stats = {}
@@ -422,7 +417,6 @@ def download_videos(days, path, overwrite):
             
             if not entries:
                 # No more videos on this page -> we are done
-                print("  No videos found.")
                 break
 
             for video in entries:
