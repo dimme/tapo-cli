@@ -3,4 +3,3 @@ requests
 urllib3
 datetime
 pycryptodome
-Crypto
