@@ -170,7 +170,7 @@ def login(username, password):
             error(res)
         config = json.dumps(res['result'], indent = 4)
 
-    if 'errorMsg' in config:
+    if 'errorMsg' in config and res.get('result', {})['errorMsg'] != "Success":
         error(config)
 
     file_path = os.path.expanduser('~') + '/.tapo-cli/'
