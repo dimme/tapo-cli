@@ -18,6 +18,7 @@ import uuid
 import time
 import json
 import datetime
+import re
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
@@ -25,15 +26,21 @@ from Crypto.Util.Padding import unpad
 access_key = '4d11b6b9d5ea4d19a829adbb9714b057'
 secret = '6ed7d97f3e73467f8a5bab90b577ba4c'
 
-api_url = 'https://aps1-app-tapo-care.i.tplinknbu.com'
-api_url2 = 'http://use1-relay-dcipc.i.tplinknbu.com'
-api_url3 = "http://aps1-relay-dcipc-beta.i.tplinknbu.com"
-api_url4 = 'http://euw1-relay-dcipc.i.tplinknbu.com'
-api_url5 = 'http://aps1-relay-dcipc.i.tplinknbu.com'
-api_url6 = 'http://aps1-relay-dcipc-beta.i.tplinknbu.com'
+DEVICE_TYPES_ALL = [
+    "SMART.TAPOPLUG",
+    "SMART.TAPOBULB",
+    "SMART.IPCAMERA",
+    "SMART.TAPOROBOVAC",
+    "SMART.TAPOHUB",
+    "SMART.TAPOSENSOR",
+    "SMART.TAPOSWITCH",
+    "SMART.TAPODOORBELL"
+]
 
-# 'https://aps1-wap.tplinkcloud.com'
-# 'https://eu-wap.tplinkcloud.com/'
+DEVICE_TYPES_CAMERA = [
+    "SMART.IPCAMERA",
+    "SMART.TAPODOORBELL"
+]
 
 # Every request needs a uuid nonce and time, any value seems to work but let's not raise any suspicions.
 nonce = str(uuid.uuid1())
@@ -65,6 +72,22 @@ def get_config():
         token = config['token']
         email = config['email']
         app_server_url_post = config['appServerUrl']
+
+        # Derive region from appServerUrl
+        # e.g. https://n-aps1-wap-gw.tplinkcloud.com -> aps1
+        # e.g. https://n-euw1-wap-gw.tplinkcloud.com -> euw1
+        region_match = re.search(r'https://n-([a-z0-9]+)-wap-gw', app_server_url_post)
+        if region_match:
+            region = region_match.group(1)
+            api_url = f'https://{region}-app-tapo-care.i.tplinknbu.com'
+        else:
+            # Fallback to a default if regex fails, or check if it's eu-wap
+            if 'eu-wap' in app_server_url_post:
+                api_url = 'https://euw1-app-tapo-care.i.tplinknbu.com'
+            else:
+                # Default to aps1 or raise error?
+                # Defaulting to aps1 as it seems to be common for non-EU
+                api_url = 'https://aps1-app-tapo-care.i.tplinknbu.com'
 
         return token, email, app_server_url_post, api_url
     except:
@@ -210,7 +233,7 @@ def devices():
     """Lists your first 20 Tapo devices."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"],"index":0,"limit":20}'
+    content = json.dumps({"deviceTypeList": DEVICE_TYPES_ALL, "index": 0, "limit": 20})
     res = probe_endpoint_post(content, endpoint)
     print(json.dumps(res, indent = 4))
 
@@ -219,7 +242,7 @@ def devices_limit():
     """Lists the device limits for your account by device type."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/batchGetDeviceUserNumberLimit'
-    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"]}'
+    content = json.dumps({"deviceTypeList": DEVICE_TYPES_ALL})
     res = probe_endpoint_post(content, endpoint)
     print(json.dumps(res, indent = 4))
 
@@ -228,7 +251,7 @@ def devices_info():
     """Lists A LOT of parameters for your devices."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"],"index":0,"limit":20}'
+    content = json.dumps({"deviceTypeList": DEVICE_TYPES_ALL, "index": 0, "limit": 20})
     devs = probe_endpoint_post(content, endpoint)
 
     endpoint = '/api/v2/common/passthrough'
@@ -289,7 +312,7 @@ def list_videos(days):
     """Lists videos for the last X days."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.IPCAMERA","SMART.TAPODOORBELL"],"index":0,"limit":20}'
+    content = json.dumps({"deviceTypeList": DEVICE_TYPES_CAMERA, "index": 0, "limit": 20})
     devs = probe_endpoint_post(content, endpoint)
 
     end_unixtime = time.time() + 86400
@@ -323,7 +346,7 @@ def download_videos(days, path, overwrite):
     path = os.path.expanduser(path)
 
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.IPCAMERA","SMART.TAPODOORBELL"],"index":0,"limit":20}'
+    content = json.dumps({"deviceTypeList": DEVICE_TYPES_CAMERA, "index": 0, "limit": 20})
     devs = probe_endpoint_post(content, endpoint)
 
     end_unixtime = time.time() + 86400
