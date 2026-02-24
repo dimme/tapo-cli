@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # DO NOT RUN ANY OF THIS CODE UNLESS YOU UNDERSTAND WHAT IT DOES
 # I TAKE NO RESPONSIBILITY FOR ANYTHING, USE ON YOUR OWN RISK
@@ -24,6 +24,16 @@ from Crypto.Util.Padding import unpad
 # Secrets extracted from the .apk
 access_key = '4d11b6b9d5ea4d19a829adbb9714b057'
 secret = '6ed7d97f3e73467f8a5bab90b577ba4c'
+
+api_url = 'https://aps1-app-tapo-care.i.tplinknbu.com'
+api_url2 = 'http://use1-relay-dcipc.i.tplinknbu.com'
+api_url3 = "http://aps1-relay-dcipc-beta.i.tplinknbu.com"
+api_url4 = 'http://euw1-relay-dcipc.i.tplinknbu.com'
+api_url5 = 'http://aps1-relay-dcipc.i.tplinknbu.com'
+api_url6 = 'http://aps1-relay-dcipc-beta.i.tplinknbu.com'
+
+# 'https://aps1-wap.tplinkcloud.com'
+# 'https://eu-wap.tplinkcloud.com/'
 
 # Every request needs a uuid nonce and time, any value seems to work but let's not raise any suspicions.
 nonce = str(uuid.uuid1())
@@ -56,7 +66,7 @@ def get_config():
         email = config['email']
         app_server_url_post = config['appServerUrl']
 
-        return token, email, app_server_url_post, 'https://euw1-app-tapo-care.i.tplinknbu.com'
+        return token, email, app_server_url_post, api_url
     except:
         print('Please login first.')
         exit(1)
@@ -146,7 +156,7 @@ def login(username, password):
     res = post(url, content, headers_post(content, '/api/v2/account/login'))
     if (res['error_code'] != 0):
         error(res)
-    
+
     config = json.dumps(res['result'], indent = 4)
 
     # Login but with extra steps
@@ -157,11 +167,11 @@ def login(username, password):
         content = json.dumps(content)
         res = post(url, content, headers_post(content, '/api/v2/account/getPushVC4TerminalMFA'))
         if (res['error_code'] != 0):
-            error(res) 
+            error(res)
 
         print('Check your Tapo App for the MFA code!')
         mfa_code = str(input('MFA Code (no spaces or dashes): '))
-    
+
         url = 'https://n-wap-gw.tplinkcloud.com/api/v2/account/checkMFACodeAndLogin'
         content = {"appType":"TP-Link_Tapo_Android","cloudUserName":username,"code":mfa_code,"MFAProcessId":mfa_process_id,"MFAType":1,"terminalBindEnabled":True}
         content = json.dumps(content)
@@ -200,7 +210,7 @@ def devices():
     """Lists your first 20 Tapo devices."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH"],"index":0,"limit":20}'
+    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"],"index":0,"limit":20}'
     res = probe_endpoint_post(content, endpoint)
     print(json.dumps(res, indent = 4))
 
@@ -209,7 +219,7 @@ def devices_limit():
     """Lists the device limits for your account by device type."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/batchGetDeviceUserNumberLimit'
-    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH"]}'
+    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"]}'
     res = probe_endpoint_post(content, endpoint)
     print(json.dumps(res, indent = 4))
 
@@ -218,7 +228,7 @@ def devices_info():
     """Lists A LOT of parameters for your devices."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH"],"index":0,"limit":20}'
+    content = '{"deviceTypeList":["SMART.TAPOPLUG","SMART.TAPOBULB","SMART.IPCAMERA","SMART.TAPOROBOVAC","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"],"index":0,"limit":20}'
     devs = probe_endpoint_post(content, endpoint)
 
     endpoint = '/api/v2/common/passthrough'
@@ -234,7 +244,7 @@ def devices_info():
 @click.command()
 def service_urls():
     """Lists URLs for various Tapo services."""
-    get_config() # Checks if logged in 
+    get_config() # Checks if logged in
     endpoint = '/api/v2/common/getAppServiceUrl'
     content = '{"serviceIds":["nbu.iot-app-server.app","nbu.iot-cloud-gateway.app","nbu.iot-security.appdevice","cipc.api"]}'
     res = probe_endpoint_post(content, endpoint)
@@ -279,9 +289,9 @@ def list_videos(days):
     """Lists videos for the last X days."""
     get_config() # Checks if logged in
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.IPCAMERA"],"index":0,"limit":20}'
+    content = '{"deviceTypeList":["SMART.IPCAMERA","SMART.TAPODOORBELL"],"index":0,"limit":20}'
     devs = probe_endpoint_post(content, endpoint)
-    
+
     end_unixtime = time.time() + 86400
     start_unixtime = end_unixtime - (days + 1) * 86400
     end_time = datetime.datetime.utcfromtimestamp(end_unixtime).strftime('%Y-%m-%d 00:00:00')
@@ -291,6 +301,9 @@ def list_videos(days):
     for dev in devs['deviceList']:
         params = 'deviceId=' + dev['deviceId'] + '&page=0&pageSize=3000&order=desc&startTime=' + start_time + '&endTime=' + end_time
         videos = probe_endpoint_get(params, endpoint)
+        if 'total' not in videos:
+            print('\nError getting videos for ' + dev['alias'] + ': ' + str(videos))
+            continue
         print('\nFound ' + str(videos['total']) + ' videos for ' + dev['alias'] + ':')
         if 'index' in videos:
             for video in videos['index']:
@@ -305,14 +318,14 @@ def list_videos(days):
 def download_videos(days, path, overwrite):
     """Downloads videos for the last X days to path."""
     get_config() # Checks if logged in
-    
+
     path = path if path[-1] == '/' else path + '/'
     path = os.path.expanduser(path)
-    
+
     endpoint = '/api/v2/common/getDeviceListByPage'
-    content = '{"deviceTypeList":["SMART.IPCAMERA"],"index":0,"limit":20}'
+    content = '{"deviceTypeList":["SMART.IPCAMERA","SMART.TAPODOORBELL"],"index":0,"limit":20}'
     devs = probe_endpoint_post(content, endpoint)
-    
+
     end_unixtime = time.time() + 86400
     start_unixtime = end_unixtime - (days + 1) * 86400
     end_time = datetime.datetime.utcfromtimestamp(end_unixtime).strftime('%Y-%m-%d 00:00:00')
@@ -323,6 +336,9 @@ def download_videos(days, path, overwrite):
     for dev in devs['deviceList']:
         params = 'deviceId=' + dev['deviceId'] + '&page=0&pageSize=3000&order=desc&startTime=' + start_time + '&endTime=' + end_time
         videos = probe_endpoint_get(params, endpoint)
+        if 'total' not in videos:
+            print('\nError getting videos for ' + dev['alias'] + ': ' + str(videos))
+            continue
         print('\nFound ' + str(videos['total']) + ' videos for ' + dev['alias'] + ':')
         if 'index' in videos:
             for video in videos['index']:
@@ -338,11 +354,11 @@ def download_videos(days, path, overwrite):
                         exit(1)
 
                     key_b64 = video['video'][0]['decryptionInfo']['key']
-                
+
                 file_path = path + dev['alias'] + '/' + datetime.datetime.strptime(video['eventLocalTime'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d') + '/'
                 file_name = video['eventLocalTime'].replace(':','-') + '.mp4'
                 if os.path.exists(file_path + file_name) and overwrite == 0:
-                    print('Already exists ' + file_path + file_name)    
+                    print('Already exists ' + file_path + file_name)
                     result.append({'file': file_path + file_name, 'device': dev['alias'], 'new_video': False, 'video': video})
                 else:
                     print('Downloading to ' + file_path + file_name)
