@@ -509,18 +509,17 @@ def download_videos(days, path, overwrite):
         videos = probe_endpoint_get(params, endpoint)
         print('\nFound ' + str(videos.get('total', 0)) + ' videos for ' + dev['alias'] + ':')
         for video in videos.get('index', []):
-            url = video['video'][0]['uri']
-            key_b64 = False
-
-            # Check if the video is encrypted and get the key
-            if 'encryptionMethod' in video['video'][0]:
-                method = video['video'][0]['encryptionMethod']
-                if method != "AES-128-CBC":
-                    print(f"Unsupported encryption method: {method}. Quitting...")
-                    print("Create an issue here: https://github.com/dimme/tapo-cli/issues")
-                    exit(1)
-
-                key_b64 = video['video'][0]['decryptionInfo']['key']
+            clip = video['video'][0]
+            url = clip['uri']
+            method = clip.get('encryptionMethod', 'NONE')
+            if method == 'AES-128-CBC':
+                key_b64 = clip['decryptionInfo']['key']
+            elif method == 'NONE':
+                key_b64 = False
+            else:
+                print(f"Unsupported encryption method: {method}. Quitting...")
+                print("Create an issue here: https://github.com/dimme/tapo-cli/issues")
+                exit(1)
 
             file_path = path + dev['alias'] + '/' + datetime.datetime.strptime(video['eventLocalTime'], '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d') + '/'
             file_name = video['eventLocalTime'].replace(':','-') + '.mp4'
